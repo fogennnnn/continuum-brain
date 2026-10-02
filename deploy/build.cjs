@@ -32,11 +32,19 @@ for (const f of fs.readdirSync(path.join(root, "src", "rules")).filter((x) => x.
     }
   })(pub);
   const missing = [];
+  const apiRefs = new Set();
   for (const f of files) {
     const text = fs.readFileSync(f, "utf8");
     for (const m of text.matchAll(/(?:href|src)="(\/[^"]+)"/g)) {
+      if (m[1].startsWith("/api/")) { apiRefs.add(m[1]); continue; }
       const target = path.join(pub, decodeURIComponent(m[1]).replace(/^[/\\]+/, ""));
       if (!fs.existsSync(target)) missing.push(`${path.relative(pub, f)} -> ${m[1]}`);
+    }
+  }
+  const workerSrc = fs.readFileSync(path.join(__dirname, "worker.js"), "utf8");
+  for (const ref of apiRefs) {
+    if (!workerSrc.includes(`"${ref}"`) && !workerSrc.includes(`'${ref}'`)) {
+      missing.push(`worker.js does not implement ${ref}`);
     }
   }
   if (missing.length > 0) {
