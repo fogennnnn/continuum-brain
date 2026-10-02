@@ -1,0 +1,20 @@
+{
+  "name": "continuumbrain-v1",
+  "version": "1.0.0",
+  "description": "ContinuumBrain-v1: deterministic policy kernel (untouched) + ContextDebtNet + Cone substrate + residual state + modulators. Zero dependencies.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "demo": "node src/demo.js",
+    "demo:serve": "node src/demo.js --serve",
+    "calibrate": "node scripts/calibrate.mjs",
+    "gate:kernel": "node scripts/gate-kernel.mjs",
+    "gate:debt": "node scripts/gate-debt.mjs",
+    "gate:cone": "node scripts/gate-cone.mjs",
+    "gate:residual": "node scripts/gate-residual.mjs",
+    "gate:full": "node scripts/gate-full.mjs",
+    "gates": "node scripts/gate-kernel.mjs && node scripts/gate-debt.mjs && node scripts/gate-cone.mjs && node scripts/gate-residual.mjs && node scripts/gate-full.mjs"
+  }
+}

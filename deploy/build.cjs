@@ -1,0 +1,49 @@
+// Stage the Cloudflare Worker deploy bundle for the ContinuumBrain demo.
+// Copies the landing page + evaluation report + rulesets into deploy/public/.
+// Run: node deploy/build.cjs (also verifies every local asset reference).
+const fs = require("node:fs");
+const path = require("node:path");
+
+const root = path.resolve(__dirname, "..");
+const pub = path.join(__dirname, "public");
+
+function copy(srcRel, destRel) {
+  const src = path.join(root, srcRel);
+  const dest = path.join(pub, destRel);
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.copyFileSync(src, dest);
+}
+
+fs.rmSync(pub, { recursive: true, force: true });
+copy("index.html", "index.html");
+copy("EVALUATION-REPORT.md", "EVALUATION-REPORT.md");
+for (const f of fs.readdirSync(path.join(root, "src", "rules")).filter((x) => x.endsWith(".json")).sort()) {
+  copy(path.join("src", "rules", f), path.join("rules", f));
+}
+
+// Guard: every local asset reference inside the bundle must resolve.
+(function verifyBundle() {
+  const files = [];
+  (function walk(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p);
+      else if (/\.(js|html)$/.test(e.name)) files.push(p);
+    }
+  })(pub);
+  const missing = [];
+  for (const f of files) {
+    const text = fs.readFileSync(f, "utf8");
+    for (const m of text.matchAll(/(?:href|src)="(\/[^"]+)"/g)) {
+      const target = path.join(pub, decodeURIComponent(m[1]).replace(/^[/\\]+/, ""));
+      if (!fs.existsSync(target)) missing.push(`${path.relative(pub, f)} -> ${m[1]}`);
+    }
+  }
+  if (missing.length > 0) {
+    console.error("deploy bundle has unresolvable asset references:\n" + missing.join("\n"));
+    process.exit(1);
+  }
+  console.log(`bundle check: ${files.length} files scanned, all local references resolve.`);
+})();
+
+console.log("continuumbrain deploy bundle staged in deploy/public.");
